@@ -42,11 +42,22 @@ main-page-web
    ```
 
 ## Usage
-To start the application, run:
+이 프로젝트는 Flask 기반 API 서버와 React 프론트엔드로 구성됩니다.
+
+### 1. 서버 (Flask API)
 ```
+cd server
+pip install -r requirements.txt
+python app.py
+```
+서버가 `http://localhost:5000`에서 `/api/features`, `/api/run-model`, `/api/performance` 엔드포인트를 제공합니다.
+
+### 2. 프론트엔드 (React)
+```
+npm install
 npm start
 ```
-This will launch the application in your default web browser.
+`npm start`를 실행하면 CRA 개발 서버가 열리고, API 요청은 `proxy` 설정을 통해 Flask 서버로 전달됩니다.
 
 ## Features
 - Main page with navigation to different steps.
