@@ -12,3 +12,9 @@ Thumbs.db
 
 # Test / coverage
 coverage/
+
+# Models
+server/models
+
+# upload file
+server/uploads
