@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
 from xgboost import XGBClassifier
 import time
 import datetime
@@ -240,6 +240,10 @@ def train_model():
         # Classification Report (상세 리포트)
         report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
         
+        # Confusion Matrix 계산
+        cm = confusion_matrix(y_test, y_pred)
+        cm_list = cm.tolist()
+        
         # 데이터셋 타입 추론 및 매핑 적용
         filename_lower = os.path.basename(feature_filepath).lower()
         dataset_type = None
@@ -254,20 +258,34 @@ def train_model():
         print(f"Detected dataset type: {dataset_type} from filename: {filename_lower}")
 
         mapped_report = {}
+        mapped_classes = []
+        
+        # 고유 레이블 추출 (정렬됨)
+        unique_labels = sorted(list(set(y_test) | set(y_pred)))
+        
         if dataset_type and dataset_type in LABEL_MAPPING:
             mapping = LABEL_MAPPING[dataset_type]
             print(f"Applying mapping for {dataset_type}")
             
+            # Report 매핑
             for key, value in report_dict.items():
-                # 키를 문자열로 변환하여 매핑 확인 (JSON 키는 항상 문자열)
                 str_key = str(key)
                 if str_key in mapping:
                     mapped_key = mapping[str_key]
                     mapped_report[mapped_key] = value
                 else:
                     mapped_report[key] = value
+            
+            # Classes 매핑 (Confusion Matrix용)
+            for label in unique_labels:
+                str_label = str(label)
+                if str_label in mapping:
+                    mapped_classes.append(mapping[str_label])
+                else:
+                    mapped_classes.append(str_label)
         else:
             mapped_report = report_dict
+            mapped_classes = [str(l) for l in unique_labels]
 
         result = {
             "completed": True,
@@ -285,6 +303,8 @@ def train_model():
                 "f1": f1
             },
             "classificationReport": mapped_report,
+            "confusionMatrix": cm_list,
+            "classes": mapped_classes,
             "datasetType": dataset_type
         }
 

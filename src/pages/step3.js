@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Step3() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("dashboard"); // 'dashboard' | 'analysis'
   const [metrics, setMetrics] = useState([
     { label: "정확도 (Accuracy)", value: 0, color: "#10b981", highlight: true },
     { label: "정밀도 (Precision)", value: 0, color: "#3b82f6" },
@@ -120,6 +121,71 @@ export default function Step3() {
     URL.revokeObjectURL(url);
   }
 
+  // Class Performance Bar Charts Helper
+  const renderClassPerformance = () => {
+    if (!step2Data?.classificationReport) return null;
+
+    const report = step2Data.classificationReport;
+    // Filter out average metrics
+    const classes = Object.keys(report).filter(key => !['accuracy', 'macro avg', 'weighted avg'].includes(key));
+
+    return (
+      <div style={{ marginTop: "32px", background: "#fff", borderRadius: "16px", padding: "32px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+        <h3 style={{ marginTop: "0", marginBottom: "24px", fontSize: "18px", fontWeight: "600" }}>
+          공격 유형별 탐지 성능 (Performance by Attack Type)
+        </h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+          {classes.map((cls) => {
+            const metrics = report[cls];
+            return (
+              <div key={cls} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "20px", background: "#f9fafb" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <span style={{ fontWeight: "700", color: "#1f2937", fontSize: "15px" }}>{cls}</span>
+                  <span style={{ fontSize: "12px", color: "#6b7280", background: "#e5e7eb", padding: "2px 8px", borderRadius: "10px" }}>
+                    Count: {metrics.support}
+                  </span>
+                </div>
+
+                {/* Precision */}
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "4px" }}>
+                    <span style={{ color: "#4b5563" }}>정밀도 (Precision)</span>
+                    <span style={{ fontWeight: "600", color: "#3b82f6" }}>{(metrics.precision * 100).toFixed(1)}%</span>
+                  </div>
+                  <div style={{ height: "8px", background: "#dbeafe", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${metrics.precision * 100}%`, height: "100%", background: "#3b82f6", borderRadius: "4px" }}></div>
+                  </div>
+                </div>
+
+                {/* Recall */}
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "4px" }}>
+                    <span style={{ color: "#4b5563" }}>재현율 (Recall)</span>
+                    <span style={{ fontWeight: "600", color: "#8b5cf6" }}>{(metrics.recall * 100).toFixed(1)}%</span>
+                  </div>
+                  <div style={{ height: "8px", background: "#ede9fe", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${metrics.recall * 100}%`, height: "100%", background: "#8b5cf6", borderRadius: "4px" }}></div>
+                  </div>
+                </div>
+
+                {/* F1-Score */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "4px" }}>
+                    <span style={{ color: "#4b5563" }}>F1-Score</span>
+                    <span style={{ fontWeight: "600", color: "#f59e0b" }}>{(metrics['f1-score'] * 100).toFixed(1)}%</span>
+                  </div>
+                  <div style={{ height: "8px", background: "#fef3c7", borderRadius: "4px", overflow: "hidden" }}>
+                    <div style={{ width: `${metrics['f1-score'] * 100}%`, height: "100%", background: "#f59e0b", borderRadius: "4px" }}></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   if (!step1Completed || !step2Completed) {
     return (
       <div className="container">
@@ -159,164 +225,213 @@ export default function Step3() {
     <div className="container">
       <h2>3단계: 성능 비교/시각화</h2>
 
-      {/* Score Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginTop: "24px" }}>
-        {metrics.map((metric, idx) => {
-          const animated = metricValues[idx] ?? 0;
-          return (
+      {/* Tab Navigation */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e5e7eb", paddingBottom: "1px" }}>
+        <button
+          onClick={() => setActiveTab("dashboard")}
+          style={{
+            padding: "12px 24px",
+            fontSize: "15px",
+            fontWeight: "600",
+            color: activeTab === "dashboard" ? "#06b6d4" : "#6b7280",
+            background: "transparent",
+            border: "none",
+            borderBottom: activeTab === "dashboard" ? "2px solid #06b6d4" : "2px solid transparent",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          대시보드 (Dashboard)
+        </button>
+        <button
+          onClick={() => setActiveTab("analysis")}
+          style={{
+            padding: "12px 24px",
+            fontSize: "15px",
+            fontWeight: "600",
+            color: activeTab === "analysis" ? "#06b6d4" : "#6b7280",
+            background: "transparent",
+            border: "none",
+            borderBottom: activeTab === "analysis" ? "2px solid #06b6d4" : "2px solid transparent",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          상세 분석 (Detailed Analysis)
+        </button>
+      </div>
+
+      {/* Tab Content: Dashboard */}
+      {activeTab === "dashboard" && (
+        <>
+          {/* Score Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
+            {metrics.map((metric, idx) => {
+              const animated = metricValues[idx] ?? 0;
+              return (
+                <div
+                  key={metric.label}
+                  style={{
+                    background: "#fff",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    border: metric.highlight ? "2px solid #10b981" : "1px solid #e5e7eb",
+                  }}
+                >
+                  <div style={{ fontSize: "14px", color: "#6b7280", marginBottom: "12px" }}>
+                    {metric.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "36px",
+                      fontWeight: "700",
+                      color: metric.color,
+                      lineHeight: "1.2",
+                    }}
+                  >
+                    {`${animated.toFixed(1)}%`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Charts Section */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "32px" }}>
+            {/* Feature Importance */}
             <div
-              key={metric.label}
               style={{
                 background: "#fff",
                 borderRadius: "16px",
                 padding: "24px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                border: metric.highlight ? "2px solid #10b981" : "1px solid #e5e7eb",
               }}
             >
-              <div style={{ fontSize: "14px", color: "#6b7280", marginBottom: "12px" }}>
-                {metric.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "36px",
-                  fontWeight: "700",
-                  color: metric.color,
-                  lineHeight: "1.2",
-                }}
-              >
-                {`${animated.toFixed(1)}%`}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Charts Section */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "32px" }}>
-        {/* Feature Importance */}
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}
-        >
-          <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
-            특징 중요도 (Feature Importance)
-          </h3>
-          {featureImportance.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {featureImportance.map((item) => (
-                <div key={item.name}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "14px", color: "#374151" }}>{item.name}</span>
-                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#06b6d4" }}>
-                      {item.value.toFixed(2)}%
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      height: "24px",
-                      background: "#e5e7eb",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${barProgress * item.value}%`,
-                        background: "linear-gradient(90deg, #06b6d4 0%, #0891b2 100%)",
-                        borderRadius: "12px",
-                        transition: "width 0.6s ease",
-                      }}
-                    />
-                  </div>
+              <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
+                특징 중요도 (Feature Importance)
+              </h3>
+              {featureImportance.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {featureImportance.map((item) => (
+                    <div key={item.name}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                        <span style={{ fontSize: "14px", color: "#374151" }}>{item.name}</span>
+                        <span style={{ fontSize: "14px", fontWeight: "600", color: "#06b6d4" }}>
+                          {item.value.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          height: "24px",
+                          background: "#e5e7eb",
+                          borderRadius: "12px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${barProgress * item.value}%`,
+                            background: "linear-gradient(90deg, #06b6d4 0%, #0891b2 100%)",
+                            borderRadius: "12px",
+                            transition: "width 0.6s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "200px",
+                  color: "#6b7280"
+                }}>
+                  <p>이 모델({step2Data?.model})은 피쳐 중요도를 제공하지 않습니다.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "200px",
-              color: "#6b7280"
-            }}>
-              <p>이 모델({step2Data?.model})은 피쳐 중요도를 제공하지 않습니다.</p>
+
+            {/* Model Info */}
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "24px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}
+            >
+              <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
+                모델 정보
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
+                  <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>사용된 모델</span>
+                  <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>{step2Data?.model}</span>
+                </div>
+                <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
+                  <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>학습 데이터 비율</span>
+                  <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>
+                    Train {step2Data?.trainRatio}% / Test {100 - (step2Data?.trainRatio || 80)}%
+                  </span>
+                </div>
+                <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
+                  <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>학습 완료 시간</span>
+                  <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>
+                    {step2Data?.completedAt ? new Date(step2Data.completedAt).toLocaleString() : "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Tab Content: Detailed Analysis */}
+      {activeTab === "analysis" && (
+        <>
+          {/* Class Performance Bar Charts */}
+          {renderClassPerformance()}
+
+          {/* Detailed Classification Report Table */}
+          {step2Data?.classificationReport && (
+            <div style={{ marginTop: "32px", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+              <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
+                상세 탐지 리포트 (Detailed Detection Report)
+              </h3>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e5e7eb" }}>
+                      <th style={{ padding: "12px", textAlign: "left", color: "#4b5563" }}>공격 유형 (Class)</th>
+                      <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>정밀도 (Precision)</th>
+                      <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>재현율 (Recall)</th>
+                      <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>F1-Score</th>
+                      <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>데이터 수 (Support)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(step2Data.classificationReport)
+                      .filter(([key]) => !['accuracy', 'macro avg', 'weighted avg'].includes(key))
+                      .map(([key, metrics]) => (
+                        <tr key={key} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "12px", fontWeight: "600", color: "#1f2937" }}>{key}</td>
+                          <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.precision * 100).toFixed(2)}%</td>
+                          <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.recall * 100).toFixed(2)}%</td>
+                          <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics['f1-score'] * 100).toFixed(2)}%</td>
+                          <td style={{ padding: "12px", textAlign: "right", color: "#6b7280" }}>{metrics.support}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Model Info / Comparison Placeholder */}
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}
-        >
-          <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
-            모델 정보
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
-              <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>사용된 모델</span>
-              <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>{step2Data?.model}</span>
-            </div>
-            <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
-              <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>학습 데이터 비율</span>
-              <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>
-                Train {step2Data?.trainRatio}% / Test {100 - (step2Data?.trainRatio || 80)}%
-              </span>
-            </div>
-            <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
-              <span style={{ display: "block", fontSize: "12px", color: "#6b7280" }}>학습 완료 시간</span>
-              <span style={{ fontSize: "16px", fontWeight: "600", color: "#374151" }}>
-                {step2Data?.completedAt ? new Date(step2Data.completedAt).toLocaleString() : "-"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed Classification Report Table */}
-      {step2Data?.classificationReport && (
-        <div style={{ marginTop: "32px", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-          <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
-            상세 탐지 리포트 (Detailed Detection Report)
-          </h3>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-              <thead>
-                <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ padding: "12px", textAlign: "left", color: "#4b5563" }}>공격 유형 (Class)</th>
-                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>정밀도 (Precision)</th>
-                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>재현율 (Recall)</th>
-                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>F1-Score</th>
-                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>데이터 수 (Support)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(step2Data.classificationReport)
-                  .filter(([key]) => !['accuracy', 'macro avg', 'weighted avg'].includes(key))
-                  .map(([key, metrics]) => (
-                    <tr key={key} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "12px", fontWeight: "600", color: "#1f2937" }}>{key}</td>
-                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.precision * 100).toFixed(2)}%</td>
-                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.recall * 100).toFixed(2)}%</td>
-                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics['f1-score'] * 100).toFixed(2)}%</td>
-                      <td style={{ padding: "12px", textAlign: "right", color: "#6b7280" }}>{metrics.support}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        </>
       )}
 
       {/* Download Button */}
