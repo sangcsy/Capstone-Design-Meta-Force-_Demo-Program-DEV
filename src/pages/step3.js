@@ -284,6 +284,41 @@ export default function Step3() {
         </div>
       </div>
 
+      {/* Detailed Classification Report Table */}
+      {step2Data?.classificationReport && (
+        <div style={{ marginTop: "32px", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+          <h3 style={{ marginTop: "0", marginBottom: "20px", fontSize: "18px", fontWeight: "600" }}>
+            상세 탐지 리포트 (Detailed Detection Report)
+          </h3>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ padding: "12px", textAlign: "left", color: "#4b5563" }}>공격 유형 (Class)</th>
+                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>정밀도 (Precision)</th>
+                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>재현율 (Recall)</th>
+                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>F1-Score</th>
+                  <th style={{ padding: "12px", textAlign: "right", color: "#4b5563" }}>데이터 수 (Support)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(step2Data.classificationReport)
+                  .filter(([key]) => !['accuracy', 'macro avg', 'weighted avg'].includes(key))
+                  .map(([key, metrics]) => (
+                    <tr key={key} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px", fontWeight: "600", color: "#1f2937" }}>{key}</td>
+                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.precision * 100).toFixed(2)}%</td>
+                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics.recall * 100).toFixed(2)}%</td>
+                      <td style={{ padding: "12px", textAlign: "right", color: "#374151" }}>{(metrics['f1-score'] * 100).toFixed(2)}%</td>
+                      <td style={{ padding: "12px", textAlign: "right", color: "#6b7280" }}>{metrics.support}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Download Button */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "32px" }}>
         <button

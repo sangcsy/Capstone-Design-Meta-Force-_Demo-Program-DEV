@@ -6,11 +6,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 from xgboost import XGBClassifier
 import time
 import datetime
 import os
+import json
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -24,6 +25,15 @@ app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB 제한
 
 # uploads 폴더가 없으면 생성
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Label Mapping 로드
+LABEL_MAPPING = {}
+try:
+    with open('label_Mapping.json', 'r', encoding='utf-8') as f:
+        LABEL_MAPPING = json.load(f)
+    print("Label mapping loaded successfully.")
+except Exception as e:
+    print(f"Error loading label mapping: {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -227,6 +237,38 @@ def train_model():
         recall = recall_score(y_test, y_pred, average='weighted', zero_division=0) * 100
         f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0) * 100
 
+        # Classification Report (상세 리포트)
+        report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+        
+        # 데이터셋 타입 추론 및 매핑 적용
+        filename_lower = os.path.basename(feature_filepath).lower()
+        dataset_type = None
+        
+        if 'unsw' in filename_lower:
+            dataset_type = 'unsw_nb15'
+        elif 'cicids' in filename_lower or 'cic' in filename_lower:
+            dataset_type = 'cicids2017'
+        elif 'iscx' in filename_lower or 'vpn' in filename_lower:
+            dataset_type = 'iscx_vpn'
+            
+        print(f"Detected dataset type: {dataset_type} from filename: {filename_lower}")
+
+        mapped_report = {}
+        if dataset_type and dataset_type in LABEL_MAPPING:
+            mapping = LABEL_MAPPING[dataset_type]
+            print(f"Applying mapping for {dataset_type}")
+            
+            for key, value in report_dict.items():
+                # 키를 문자열로 변환하여 매핑 확인 (JSON 키는 항상 문자열)
+                str_key = str(key)
+                if str_key in mapping:
+                    mapped_key = mapping[str_key]
+                    mapped_report[mapped_key] = value
+                else:
+                    mapped_report[key] = value
+        else:
+            mapped_report = report_dict
+
         result = {
             "completed": True,
             "model": selected_model,
@@ -241,7 +283,9 @@ def train_model():
                 "precision": precision,
                 "recall": recall,
                 "f1": f1
-            }
+            },
+            "classificationReport": mapped_report,
+            "datasetType": dataset_type
         }
 
         return jsonify(result)
