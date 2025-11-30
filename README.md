@@ -1,60 +1,80 @@
-# Main Page Web Project
+# AI Encrypted Traffic Analysis Platform
 
 ## Overview
-This project is a web application designed to guide users through a series of steps. The main page serves as the entry point, providing navigation to different steps of the application.
+This project is a comprehensive web application designed to detect malicious behavior within encrypted network traffic using advanced machine learning algorithms. It provides a step-by-step workflow for data processing, model training, and performance analysis.
+
+## Key Features
+
+### 1. Feature Selection & Extraction
+- Upload CSV datasets (e.g., UNSW-NB15, CICIDS2017).
+- Select specific network flow features for analysis.
+- Supports automatic dataset type detection for label mapping.
+
+### 2. Model Training
+- Train various machine learning models:
+  - **Random Forest**
+  - **XGBoost**
+  - **Decision Tree**
+  - **KNN (K-Nearest Neighbors)**
+- Customizable hyperparameters (e.g., Learning Rate).
+- Real-time training progress monitoring.
+
+### 3. Performance Analysis
+- Visualize model performance with key metrics:
+  - **Accuracy, Precision, Recall, F1-Score**
+- **Detailed Classification Report**: View detection rates for specific attack types (e.g., DoS, Exploits, PortScan).
+- **Feature Importance**: Identify which network features are most critical for detection.
+- Download analysis reports as CSV.
 
 ## Project Structure
 ```
-main-page-web
-├── public
-│   └── index.html
+project-root
+├── backend
+│   ├── app.py              # Flask Backend Server
+│   └── uploads             # Data storage
 ├── src
-│   ├── index.js
-│   ├── app.js
 │   ├── pages
-│   │   ├── mainPage.js
-│   │   ├── step1.js
-│   │   ├── step2.js
-│   │   └── step3.js
-│   ├── components
-│   │   ├── Header.js
-│   │   ├── Footer.js
-│   │   └── StepCard.js
-│   └── styles
-│       └── main.css
-├── package.json
-├── .gitignore
+│   │   ├── mainPage.js     # Landing Page
+│   │   ├── step1.js        # Data Processing
+│   │   ├── step2.js        # Model Training
+│   │   └── step3.js        # Result Visualization
+│   └── ...
+├── label_Mapping.json      # Attack Label Mappings
 └── README.md
 ```
 
-## Installation
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   ```
-2. Navigate to the project directory:
-   ```
-   cd main-page-web
-   ```
-3. Install the dependencies:
-   ```
-   npm install
-   ```
+## Installation & Usage
 
-## Usage
-To start the application, run:
+### Prerequisites
+- Node.js & npm
+- Python 3.8+
+
+### 1. Backend Setup
+Navigate to the root directory and install Python dependencies:
+```bash
+pip install flask flask-cors pandas numpy scikit-learn xgboost
 ```
+Start the backend server:
+```bash
+python backend/app.py
+```
+*The server will run on http://localhost:5000*
+
+### 2. Frontend Setup
+In a new terminal, install Node dependencies:
+```bash
+npm install
+```
+Start the React application:
+```bash
 npm start
 ```
-This will launch the application in your default web browser.
+*The application will open at http://localhost:3000*
 
-## Features
-- Main page with navigation to different steps.
-- Responsive design with consistent header and footer across all pages.
-- Step cards that provide information about each step.
-
-## Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+## Supported Datasets
+- **UNSW-NB15**: Comprehensive network intrusion dataset.
+- **CICIDS2017**: Intrusion detection dataset with diverse attacks.
+- **ISCX-VPN**: VPN vs Non-VPN traffic classification.
 
 ## License
 This project is licensed under the MIT License.
